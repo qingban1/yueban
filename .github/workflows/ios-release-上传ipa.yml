@@ -23,17 +23,16 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Prepare IPA
-        id: prepare_ipa
         shell: bash
         run: |
           set -euo pipefail
           shopt -s nullglob
-
           parts=(splitfile*)
           if (( ${#parts[@]} > 0 )); then
             echo "发现 ${#parts[@]} 个分片，开始合并。"
             cat "${parts[@]}" > "$RUNNER_TEMP/ipa_bundle.zip"
             unzip -tq "$RUNNER_TEMP/ipa_bundle.zip"
+            mkdir -p "$RUNNER_TEMP/ipa_unpacked"
             unzip -oq "$RUNNER_TEMP/ipa_bundle.zip" -d "$RUNNER_TEMP/ipa_unpacked"
             unpacked_ipas=()
             while IFS= read -r -d '' file; do
@@ -56,7 +55,6 @@ jobs:
             fi
             cp "${ipas[0]}" "$RUNNER_TEMP/Runner.ipa"
           fi
-
           unzip -tq "$RUNNER_TEMP/Runner.ipa"
           ls -lh "$RUNNER_TEMP/Runner.ipa"
           echo "IPA_PATH=$RUNNER_TEMP/Runner.ipa" >> "$GITHUB_ENV"
@@ -73,12 +71,11 @@ jobs:
         shell: bash
         env:
           APPLE_USERNAME: 'SehgalKantola9139@outlook.com'
-          # 将下一行替换为全新生成的 Apple App 专用密码。勿使用以前已公开的密码。
-          APPLE_PASSWORD: 'REPLACE_WITH_NEW_APP_SPECIFIC_PASSWORD'
+          APPLE_PASSWORD: 'zicn-xwqo-pxyw-dqwk'
         run: |
           set -euo pipefail
-          if [[ "$APPLE_PASSWORD" == 'REPLACE_WITH_NEW_APP_SPECIFIC_PASSWORD' ]]; then
-            echo '错误：请先在 YAML 中填写新的 Apple App 专用密码。'
+          if [[ "$APPLE_USERNAME" == 'YOUR_APPLE_ID_EMAIL' || "$APPLE_PASSWORD" == 'REPLACE_WITH_NEW_APP_SPECIFIC_PASSWORD' ]]; then
+            echo '错误：请在 YAML env 中填写 Apple ID 邮箱和新生成的 App 专用密码。'
             exit 1
           fi
           xcodebuild -version
@@ -86,7 +83,7 @@ jobs:
           xcrun altool --upload-app \
             --file "$IPA_PATH" \
             --type ios \
-            --username "SehgalKantola9139@outlook.com" \
-            --password 'zicn-xwqo-pxyw-dqwk' \
+            --username "$APPLE_USERNAME" \
+            --password '@env:APPLE_PASSWORD' \
             --verbose
 
